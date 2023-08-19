@@ -11,20 +11,19 @@ d3.json("knowledge_graph_data.json").then(function (graph) {
             "link",
             d3.forceLink(graph.links).id((d) => d.id)
         )
-        .force("charge", d3.forceManyBody())
+        .force("charge", d3.forceManyBody().strength(-150))
         .force(
             "center",
             d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2)
         );
+    
 
-    var link = svg
-        .append("g")
+    var link = svg.append("g")
         .selectAll("line")
         .data(graph.links)
-        .enter()
-        .append("line")
-        .style("stroke", "#aaa") // Color of the links
-        .style("stroke-width", "0.5px"); // Width of the links
+        .enter().append("line")
+        .style("stroke", "#aaa")
+        .style("stroke-width", ".5px");  // Initial width
 
     var node = svg
         .append("g")
@@ -32,7 +31,7 @@ d3.json("knowledge_graph_data.json").then(function (graph) {
         .data(graph.nodes)
         .enter()
         .append("circle")
-        .attr("r", 5)
+        .attr("r", 4)
         .call(
             d3
                 .drag()
@@ -51,14 +50,22 @@ d3.json("knowledge_graph_data.json").then(function (graph) {
     function zoomed() {
         var transform = d3.event.transform;
         node.attr("transform", transform);
-        link.attr("transform", transform);
+        link.attr("transform", transform);  // Apply the entire transform to the links
         labels.attr("transform", transform);
         
-        // Adjust text size based on zoom scale
-        var scale = transform.k;
-        var fontSize = 10 / scale;  // Adjust base font size as needed
-        fontSize = Math.min(14, Math.max(fontSize, 8));  // Set minimum and maximum font sizes
+        // Adjust the stroke width based on zoom level
+        var strokeWidth = .5 / transform.k;  // Adjust as needed
+        link.style("stroke-width", strokeWidth + "px");    
+
+        // Adjust font size for labels based on zoom level
+        var fontSize = 12 / transform.k;  // Adjust base font size as needed
+        fontSize = Math.min(12, Math.max(fontSize, 12));  // Set minimum and maximum font sizes
         labels.style("font-size", fontSize + "px");
+
+        // Adjust label truncation based on zoom level
+        var charLimit = Math.min(40, Math.max(20, 20 / transform.k));  // Adjust these values as needed
+        labels.text(d => d.title.substring(0, charLimit) + (d.title.length > charLimit ? "..." : ""));
+
     }
     
     window.toggleLabels = function () {
@@ -71,15 +78,14 @@ d3.json("knowledge_graph_data.json").then(function (graph) {
     };
 
     // Add labels for nodes
-    var labels = svg
-        .append("g")
+    var labels = svg.append("g")
         .selectAll("text")
         .data(graph.nodes)
-        .enter()
-        .append("text")
-        .attr("dx", 12)
-        .attr("dy", ".35em")
-        .text((d) => d.title.substring(0, 15) + "..."); // Displaying only the first 15 characters
+        .enter().append("text")
+        .attr("dx", 5)   // Adjust this value for horizontal spacing
+        .attr("dy", ".35em")   // Adjust this value for vertical alignment
+        .style("font-size", "12px")  // Set an initial font size
+        .text(d => d.title.substring(0, 20) + "...");
 
     // Add dynamic tooltips
     node.on("mouseover", function (d) {
